@@ -11,3 +11,5 @@ lmdb-rkv = "0.14.0"
 serde_json = "1.0.100"
 serde = { version = "1.0", features = ["derive"] }
 scru128 = { version = "2.2.0", features = ["serde"] }
+base64 = "0.21.2"
+sled = "0.34.7"
