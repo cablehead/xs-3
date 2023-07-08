@@ -2,38 +2,35 @@ use base64::Engine;
 
 mod xs_lib;
 
-/*
-## Storage
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+struct MyStruct1 {
+    field1: u32,
+    field2: String,
+}
 
-content.add: id, hash  # need to be able give a type
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+struct MyStruct2 {
+    field3: f64,
+    field4: bool,
+}
 
-content_type is:
-
-- Text
-- Link
-- Stack
-- Image
-
-mime_type is:
-
-- text/plain
-- image/png
-
-Potentially source
-
-stack.add: id, id
-stack.del: id, id
-edit.add: id, id
-
-xs_lib::store_put(&env, Some("clipboard".into()), None, line.clone())
-xs_lib::store_put(&env, Some("stack".into()), None, data).unwrap();
-xs_lib::store_put(&env, Some("stack".into()), Some("delete".into()), data).unwrap();
-xs_lib::store_put(&env, Some("item".into()), None, item).unwrap();
-xs_lib::store_put(&env, Some("link".into()), None, data).unwrap();
-*/
-
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+enum MyEnum {
+    Struct1(MyStruct1),
+    Struct2(MyStruct2),
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if false {
+        let db: sled::Db = sled::open("my_db").unwrap();
+        for record in db.iter() {
+            let record = record.unwrap();
+            let decoded: MyEnum = bincode::deserialize(&record.1).unwrap();
+            println!("{:?}", decoded);
+        }
+        return Ok(());
+    }
+
     let db: sled::Db = sled::open("my_db").unwrap();
     let path =
         std::path::Path::new("/Users/andy/Library/Application Support/stream.cross.stacks/stream");
@@ -56,9 +53,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     let h = cacache::write_hash_sync("./my-cache", bytes)?;
                     println!("hash: {}", &h);
-                } else if types.contains_key("public.png") {
-                    let content = types["public.png"].as_str().unwrap().as_bytes();
+
+                    let my_struct1 = MyStruct1 {
+                        field1: 42,
+                        field2: "Hello, world!".to_string(),
+                    };
+                    let encoded1: Vec<u8> =
+                        bincode::serialize(&MyEnum::Struct1(my_struct1)).unwrap();
+                    db.insert("key1", encoded1)?;
                 }
+                /*
+                     else if types.contains_key("public.png") {
+                     let content = types["public.png"].as_str().unwrap().as_bytes();
+                 }
+                */
             }
 
             _ => (),
