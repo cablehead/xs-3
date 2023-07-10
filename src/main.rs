@@ -18,7 +18,11 @@ pub struct Store {
 impl Store {
     pub fn new(path: &str) -> Store {
         let db = sled::open(Path::new(path).join("index")).unwrap();
-        let cache_path = Path::new(path).join("cas").to_str().unwrap().to_string();
+        let cache_path = Path::new(path)
+            .join("cas")
+            .into_os_string()
+            .into_string()
+            .unwrap();
         Store { db, cache_path }
     }
 
@@ -37,6 +41,9 @@ impl Store {
 #[derive(Parser, Debug)]
 #[clap(version)]
 struct Args {
+    #[clap(value_parser)]
+    path: String,
+
     #[clap(subcommand)]
     command: Commands,
 }
@@ -50,7 +57,7 @@ enum Commands {
 fn main() {
     let params = Args::parse();
 
-    let mut store = Store::new("my_db");
+    let mut store = Store::new(&params.path);
 
     match &params.command {
         Commands::Put => {
