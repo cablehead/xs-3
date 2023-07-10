@@ -35,8 +35,8 @@ impl Store {
 
 fn main() {
     let mut store = Store::new("my_db");
-    let stdin = io::stdin();
 
+    let stdin = io::stdin();
     for line in stdin.lock().lines() {
         let line = line.unwrap();
         let frame = store.put(line.as_bytes());
@@ -47,6 +47,6 @@ fn main() {
     for record in store.db.iter() {
         let record = record.unwrap();
         let decoded: Frame = bincode::deserialize(&record.1).unwrap();
-        println!("{:?}", decoded);
+        println!("{}", serde_json::to_string(&decoded).unwrap());
     }
 }
