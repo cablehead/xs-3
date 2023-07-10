@@ -1,3 +1,4 @@
+use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use sled::Db;
 use std::io::{self, BufRead};
@@ -33,20 +34,40 @@ impl Store {
     }
 }
 
+#[derive(Parser, Debug)]
+#[clap(version)]
+struct Args {
+    #[clap(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    Put,
+    Cat,
+}
+
 fn main() {
+    let params = Args::parse();
+
     let mut store = Store::new("my_db");
 
-    let stdin = io::stdin();
-    for line in stdin.lock().lines() {
-        let line = line.unwrap();
-        let frame = store.put(line.as_bytes());
-        println!("Stored frame: {:?}", frame);
-    }
-
-    // Read and print all records from sled
-    for record in store.db.iter() {
-        let record = record.unwrap();
-        let decoded: Frame = bincode::deserialize(&record.1).unwrap();
-        println!("{}", serde_json::to_string(&decoded).unwrap());
+    match &params.command {
+        Commands::Put => {
+            let stdin = io::stdin();
+            for line in stdin.lock().lines() {
+                let line = line.unwrap();
+                let frame = store.put(line.as_bytes());
+                println!("Stored frame: {:?}", frame);
+            }
+        }
+        Commands::Cat => {
+            // Read and print all records from sled
+            for record in store.db.iter() {
+                let record = record.unwrap();
+                let decoded: Frame = bincode::deserialize(&record.1).unwrap();
+                println!("{}", serde_json::to_string(&decoded).unwrap());
+            }
+        }
     }
 }
