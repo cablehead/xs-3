@@ -570,6 +570,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sled",
+ "ssri",
 ]
 
 [[package]]
