@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use sled::Db;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Read};
 use std::path::Path;
 
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
@@ -50,8 +50,15 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Put,
+    #[clap(name = "put")]
+    Put(PutCommand),
     Cat,
+}
+
+#[derive(Parser, Debug)]
+struct PutCommand {
+    #[clap(short, long)]
+    follow: bool,
 }
 
 fn main() {
@@ -60,11 +67,18 @@ fn main() {
     let mut store = Store::new(&params.path);
 
     match &params.command {
-        Commands::Put => {
+        Commands::Put(put_command) => {
             let stdin = io::stdin();
-            for line in stdin.lock().lines() {
-                let line = line.unwrap();
-                let frame = store.put(line.as_bytes());
+            if put_command.follow {
+                for line in stdin.lock().lines() {
+                    let line = line.unwrap();
+                    let frame = store.put(line.as_bytes());
+                    println!("{}", serde_json::to_string(&frame).unwrap());
+                }
+            } else {
+                let mut content = String::new();
+                stdin.lock().read_to_string(&mut content).unwrap();
+                let frame = store.put(content.as_bytes());
                 println!("{}", serde_json::to_string(&frame).unwrap());
             }
         }
