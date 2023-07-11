@@ -65,7 +65,7 @@ fn main() {
             for line in stdin.lock().lines() {
                 let line = line.unwrap();
                 let frame = store.put(line.as_bytes());
-                println!("Stored frame: {:?}", frame);
+                println!("{}", serde_json::to_string(&frame).unwrap());
             }
         }
         Commands::Cat => {
