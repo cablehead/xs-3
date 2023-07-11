@@ -33,7 +33,7 @@ impl Store {
             hash: h,
         };
         let encoded: Vec<u8> = bincode::serialize(&frame).unwrap();
-        self.db.insert(frame.id.to_string(), encoded).unwrap();
+        self.db.insert(frame.id.to_bytes(), encoded).unwrap();
         frame
     }
 }
