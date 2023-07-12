@@ -52,13 +52,19 @@ struct Args {
 enum Commands {
     #[clap(name = "put")]
     Put(PutCommand),
-    Cat,
+    List,
+    Cat(CatCommand),
 }
 
 #[derive(Parser, Debug)]
 struct PutCommand {
     #[clap(short, long)]
     follow: bool,
+}
+
+#[derive(Parser, Debug)]
+struct CatCommand {
+    hash: String,
 }
 
 fn main() {
@@ -83,12 +89,19 @@ fn main() {
                 println!("{}", serde_json::to_string(&frame).unwrap());
             }
         }
-        Commands::Cat => {
+        Commands::List => {
             // Read and print all records from sled
             for record in store.db.iter() {
                 let record = record.unwrap();
                 let decoded: Frame = bincode::deserialize(&record.1).unwrap();
                 println!("{}", serde_json::to_string(&decoded).unwrap());
+            }
+        }
+        Commands::Cat(cmd) => {
+            let hash: ssri::Integrity = cmd.hash.parse().unwrap();
+            match cacache::read_hash_sync(&store.cache_path, &hash) {
+                Ok(data) => print!("{}", String::from_utf8(data).unwrap()),
+                Err(err) => eprintln!("Error reading file: {}", err),
             }
         }
     }
