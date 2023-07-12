@@ -67,17 +67,18 @@ fn main() {
     let mut store = Store::new(&params.path);
 
     match &params.command {
-        Commands::Put(put_command) => {
+        Commands::Put(cmd) => {
             let stdin = io::stdin();
-            if put_command.follow {
-                for line in stdin.lock().lines() {
-                    let line = line.unwrap();
-                    let frame = store.put(line.as_bytes());
-                    println!("{}", serde_json::to_string(&frame).unwrap());
-                }
+            let mut stdin = stdin.lock();
+            let iterator: Box<dyn Iterator<Item = String>> = if cmd.follow {
+                Box::new(stdin.lines().map(|line| line.unwrap()))
             } else {
                 let mut content = String::new();
-                stdin.lock().read_to_string(&mut content).unwrap();
+                stdin.read_to_string(&mut content).unwrap();
+                Box::new(std::iter::once(content))
+            };
+
+            for content in iterator {
                 let frame = store.put(content.as_bytes());
                 println!("{}", serde_json::to_string(&frame).unwrap());
             }
