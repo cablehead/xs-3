@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use sled::Db;
-use std::io::{self, BufRead, Read};
+use std::io::{self, Read};
 use std::path::Path;
 
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
@@ -67,25 +67,23 @@ struct CatCommand {
     hash: String,
 }
 
-fn main() {
-    let params = Args::parse();
+fn run_app(args: Args) {
+    let mut store = Store::new(&args.path);
 
-    let mut store = Store::new(&params.path);
-
-    match &params.command {
+    match &args.command {
         Commands::Put(cmd) => {
             let stdin = io::stdin();
             let mut stdin = stdin.lock();
-            let iterator: Box<dyn Iterator<Item = String>> = if cmd.follow {
-                Box::new(stdin.lines().map(|line| line.unwrap()))
+            let iterator: Box<dyn Iterator<Item = Vec<u8>>> = if cmd.follow {
+                Box::new(stdin.bytes().map(|byte| vec![byte.unwrap()]))
             } else {
-                let mut content = String::new();
-                stdin.read_to_string(&mut content).unwrap();
+                let mut content = Vec::new();
+                stdin.read_to_end(&mut content).unwrap();
                 Box::new(std::iter::once(content))
             };
 
             for content in iterator {
-                let frame = store.put(content.as_bytes());
+                let frame = store.put(&content);
                 println!("{}", serde_json::to_string(&frame).unwrap());
             }
         }
@@ -104,5 +102,36 @@ fn main() {
                 Err(err) => eprintln!("Error reading file: {}", err),
             }
         }
+    }
+}
+
+fn main() {
+    let params = Args::parse();
+    run_app(params);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_put_binary_data() {
+        let data = vec![0u8, 1, 2, 3, 4, 5];
+        let temp_dir = TempDir::new().unwrap();
+        let mut store = Store::new(temp_dir.path().to_str().unwrap());
+        let frame = store.put(&data);
+        let read_data = cacache::read_hash_sync(&store.cache_path, &frame.hash).unwrap();
+        assert_eq!(data, read_data);
+    }
+
+    #[test]
+    fn test_put_string() {
+        let data = "Hello, world!".as_bytes().to_vec();
+        let temp_dir = TempDir::new().unwrap();
+        let mut store = Store::new(temp_dir.path().to_str().unwrap());
+        let frame = store.put(&data);
+        let read_data = cacache::read_hash_sync(&store.cache_path, &frame.hash).unwrap();
+        assert_eq!(data, read_data);
     }
 }

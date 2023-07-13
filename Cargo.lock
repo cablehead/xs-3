@@ -691,6 +691,7 @@ dependencies = [
  "serde_json",
  "sled",
  "ssri",
+ "tempfile",
 ]
 
 [[package]]
