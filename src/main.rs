@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use sled::Db;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::path::Path;
 
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
@@ -98,7 +98,7 @@ fn run_app(args: Args) {
         Commands::Cat(cmd) => {
             let hash: ssri::Integrity = cmd.hash.parse().unwrap();
             match cacache::read_hash_sync(&store.cache_path, &hash) {
-                Ok(data) => print!("{}", String::from_utf8(data).unwrap()),
+                Ok(data) => io::stdout().write_all(&data).unwrap(),
                 Err(err) => eprintln!("Error reading file: {}", err),
             }
         }
